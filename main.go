@@ -18,6 +18,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/eensymachines-in/patio/digital"
+	oled "github.com/eensymachines-in/ssd1306"
 	log "github.com/sirupsen/logrus"
 	_ "gobot.io/x/gobot"
 	"gobot.io/x/gobot/drivers/gpio"
@@ -97,6 +99,7 @@ func PulseEveryDayAt(clock string, pulse time.Duration, canc <-chan bool) (chan 
 			log.WithFields(log.Fields{"offset": offDuration}).Debug("Time since tick")
 			ticks <- time.Now()
 			start := time.Now().Add(offDuration) // offDuration is negative, hence it would give the pulse start
+			// BUG: what if now >= end ? 
 			end := start.Add(pulse)
 			<-time.After(time.Until(end)) // this will be less than the pulse since the elapsed time has to be subtracted
 			ticks <- time.Now()
@@ -109,7 +112,7 @@ func PulseEveryDayAt(clock string, pulse time.Duration, canc <-chan bool) (chan 
 			<-time.After(pulse)
 			ticks <- time.Now()
 		}
-		for t := range PulseEvery(daily, pulse, canc) {
+		for t := range PulseEvery(hourly, pulse, canc) {
 			ticks <- t
 		}
 	}()
@@ -193,6 +196,36 @@ func TickEvery(d time.Duration, canc <-chan bool) chan time.Time {
 	return ticks
 }
 
+func RelayTest(p *gpio.DirectPinDriver) {
+
+	state, _ := p.DigitalRead()
+	// p.DigitalWrite(1)
+	// time.Sleep(1 * time.Second)
+	log.Debugf("Pin state, %d", state)
+
+	p.DigitalWrite(0)
+	// time.Sleep(1 * time.Second)
+
+	state, _ = p.DigitalRead()
+	log.Debugf("Pin state, %d", state)
+	// if err != nil {
+	// 	log.Error(err)
+	// 	return
+	// }
+	// log.Debugf("Pin state, %d", state)
+	// if state == 0 {
+	// 	log.Info("Now turning on the relay")
+	// 	p.DigitalWrite(1)
+	// 	time.Sleep(1 * time.Second)
+	// } else {
+	// 	log.Info("Now turning off the relay")
+	// 	p.DigitalWrite(0)
+	// 	time.Sleep(1 * time.Second)
+	// }
+	// state, _ = p.DigitalRead()
+	// log.Debugf("Pin state, %d", state)
+}
+
 // this main loop would only setup the tickers
 func main() {
 	fmt.Println("We are inside the patio program ..")
@@ -210,20 +243,19 @@ func main() {
 
 	// initialized hardware drivers
 	r := raspi.NewAdaptor()
-	relay := gpio.NewDirectPinDriver(r, "40")
-	relay.On() // the chinese relay has closure on GPIO low, open on GPIO high
+	rs := digital.NewRelaySwitch("35", false, r).Boot()
+	disp := oled.NewSundingOLED("oled", r)
+	disp.ResetImage().Message(10, 10, "Hello world").Render()
+	disp.Clean()
+
 	//Setup work for the bot
 	log.Debug("Initialized Pi connection..")
-	ticks, _ := TickEveryDayAt("15:30", cancel)
+	// ticks, _ := TickEveryDayAt("15:30", cancel)
+	ticks, _ := PulseEveryDayAt("13:50", 1*time.Minute, cancel)
 	for t := range ticks {
-		log.Debug(t.String())
-		on, _ := relay.DigitalRead()
-		if on == 1 {
-			relay.Off()
-		} else {
-			relay.On()
-		}
+		log.Debug(t)
+		rs.Toggle()
 	}
 	// Flushing the hardware states
-	relay.On()
+	disp.Clean()
 }
