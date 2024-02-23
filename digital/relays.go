@@ -47,14 +47,10 @@ func NewRelaySwitch(pin string, invrtd bool, conn gobot.Adaptor) *RelaySwitch {
 // will set the pin to low - for inverted relays will set the pin to high
 // copy the pin state back onto the field
 func (rs *RelaySwitch) Boot() *RelaySwitch {
-	if rs.Inverted {
-		rs.DirectPinDriver.DigitalWrite(1)
-	} else {
-		rs.DirectPinDriver.DigitalWrite(0)
-	}
+	rs.Low()
 	time.Sleep(1 * time.Second)
-	val, _ := rs.DirectPinDriver.DigitalRead()
-	rs.state = val == 1 // state is independent of the inversion
+	// val, _ := rs.DirectPinDriver.DigitalRead()
+	// rs.state = val == 1 // state is independent of the inversion
 	// state just reflects if high or low
 	// high / low is equivalent to on / off
 	// digital pin state is inverted incase of inverted flag

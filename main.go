@@ -22,7 +22,6 @@ import (
 	oled "github.com/eensymachines-in/ssd1306"
 	log "github.com/sirupsen/logrus"
 	_ "gobot.io/x/gobot"
-	"gobot.io/x/gobot/drivers/gpio"
 	"gobot.io/x/gobot/platforms/raspi"
 )
 
@@ -99,7 +98,7 @@ func PulseEveryDayAt(clock string, pulse time.Duration, canc <-chan bool) (chan 
 			log.WithFields(log.Fields{"offset": offDuration}).Debug("Time since tick")
 			ticks <- time.Now()
 			start := time.Now().Add(offDuration) // offDuration is negative, hence it would give the pulse start
-			// BUG: what if now >= end ? 
+			// BUG: what if now >= end ?
 			end := start.Add(pulse)
 			<-time.After(time.Until(end)) // this will be less than the pulse since the elapsed time has to be subtracted
 			ticks <- time.Now()
@@ -196,36 +195,6 @@ func TickEvery(d time.Duration, canc <-chan bool) chan time.Time {
 	return ticks
 }
 
-func RelayTest(p *gpio.DirectPinDriver) {
-
-	state, _ := p.DigitalRead()
-	// p.DigitalWrite(1)
-	// time.Sleep(1 * time.Second)
-	log.Debugf("Pin state, %d", state)
-
-	p.DigitalWrite(0)
-	// time.Sleep(1 * time.Second)
-
-	state, _ = p.DigitalRead()
-	log.Debugf("Pin state, %d", state)
-	// if err != nil {
-	// 	log.Error(err)
-	// 	return
-	// }
-	// log.Debugf("Pin state, %d", state)
-	// if state == 0 {
-	// 	log.Info("Now turning on the relay")
-	// 	p.DigitalWrite(1)
-	// 	time.Sleep(1 * time.Second)
-	// } else {
-	// 	log.Info("Now turning off the relay")
-	// 	p.DigitalWrite(0)
-	// 	time.Sleep(1 * time.Second)
-	// }
-	// state, _ = p.DigitalRead()
-	// log.Debugf("Pin state, %d", state)
-}
-
 // this main loop would only setup the tickers
 func main() {
 	fmt.Println("We are inside the patio program ..")
@@ -243,15 +212,14 @@ func main() {
 
 	// initialized hardware drivers
 	r := raspi.NewAdaptor()
-	rs := digital.NewRelaySwitch("35", false, r).Boot()
+	rs := digital.NewRelaySwitch("35", true, r).Boot()
 	disp := oled.NewSundingOLED("oled", r)
-	disp.ResetImage().Message(10, 10, "Hello world").Render()
 	disp.Clean()
-
+	disp.ResetImage().Message(10, 10, "Hello world").Render()
 	//Setup work for the bot
 	log.Debug("Initialized Pi connection..")
 	// ticks, _ := TickEveryDayAt("15:30", cancel)
-	ticks, _ := PulseEveryDayAt("13:50", 1*time.Minute, cancel)
+	ticks, _ := PulseEveryDayAt("15:25", 1*time.Minute, cancel)
 	for t := range ticks {
 		log.Debug(t)
 		rs.Toggle()
