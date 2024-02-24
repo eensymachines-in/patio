@@ -34,6 +34,11 @@ const (
 	secondly  = 1 * time.Second
 )
 
+const (
+	PIN_INTERRRUPT = "33"
+	PIN_RELAY      = "35"
+)
+
 func init() {
 	// Setting up the loggin framework
 	log.SetFormatter(&log.TextFormatter{DisableColors: false, FullTimestamp: false})
@@ -195,6 +200,19 @@ func TickEvery(d time.Duration, canc <-chan bool) chan time.Time {
 	return ticks
 }
 
+// func main() {
+// 	cancel := make(chan bool, 1)
+// 	defer close(cancel)
+// 	r := raspi.NewAdaptor()
+// 	r.Connect()
+// 	btn := digital.NewInterruptButton("33", digital.BTN_PULLUP, r)
+// 	fmt.Println("Press the button to see the interrupt ..")
+// 	for t := range btn.Start(cancel, 350*time.Millisecond) {
+// 		fmt.Println(t)
+// 		return
+// 	}
+// }
+
 // this main loop would only setup the tickers
 func main() {
 	fmt.Println("We are inside the patio program ..")
@@ -212,14 +230,25 @@ func main() {
 
 	// initialized hardware drivers
 	r := raspi.NewAdaptor()
-	rs := digital.NewRelaySwitch("35", true, r).Boot()
+	r.Connect()
+	rs := digital.NewRelaySwitch(PIN_RELAY, false, r).Boot()
 	disp := oled.NewSundingOLED("oled", r)
 	disp.Clean()
 	disp.ResetImage().Message(10, 10, "Hello world").Render()
 	//Setup work for the bot
 	log.Debug("Initialized Pi connection..")
+
+	log.Info("Setting up interrupt watch")
+	go func() {
+		btn := digital.NewInterruptButton(PIN_INTERRRUPT, digital.BTN_PULLUP, r)
+		for t := range btn.Start(cancel, 350*time.Millisecond) {
+			fmt.Println(t)
+			rs.Toggle()
+		}
+	}()
+
 	// ticks, _ := TickEveryDayAt("15:30", cancel)
-	ticks, _ := PulseEveryDayAt("15:25", 1*time.Minute, cancel)
+	ticks, _ := PulseEveryDayAt("16:22", 1*time.Minute, cancel)
 	for t := range ticks {
 		log.Debug(t)
 		rs.Toggle()
