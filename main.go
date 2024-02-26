@@ -95,10 +95,18 @@ func PulseEveryDayAt(clock string, pulse time.Duration, canc <-chan bool) (chan 
 		if offset >= 0 {
 			// case where time until tick duration, so sleeping
 			log.WithFields(log.Fields{"offset": offDuration}).Debug("Time until tick")
-			<-time.After(offDuration)
-			ticks <- time.Now()
-			<-time.After(pulse)
-			ticks <- time.Now()
+			select {
+			case <-time.After(offDuration):
+				ticks <- time.Now()
+			case <-canc:
+				return
+			}
+			select {
+			case <-time.After(pulse):
+				ticks <- time.Now()
+			case <-canc:
+				return
+			}
 		} else {
 			//this is a tricky situation when the ticking time for the day has already elapsed
 			// 24 hour cycle does not apply, for the next tick but you have to send an extra tick for the tick that has elapsed
@@ -107,16 +115,28 @@ func PulseEveryDayAt(clock string, pulse time.Duration, canc <-chan bool) (chan 
 			start := time.Now().Add(offDuration) // offDuration is negative, hence it would give the pulse start
 			// BUG: what if now >= end ?
 			end := start.Add(pulse)
-			<-time.After(time.Until(end)) // this will be less than the pulse since the elapsed time has to be subtracted
-			ticks <- time.Now()
+			select {
+			case <-time.After(time.Until(end)): // this will be less than the pulse since the elapsed time has to be subtracted
+				ticks <- time.Now()
+			case <-canc:
+				return
+			}
 
 			offset = int64(86400) + offset                                    // offset here is negative, hence the final offset calculated would have to be less than 24 hours / 86400 seconds
 			offsettedDay, _ := time.ParseDuration(fmt.Sprintf("%ds", offset)) // a day is about 86400 seconds
 			log.WithFields(log.Fields{"offset": offsettedDay}).Debug("time until next tick, offset day")
-			<-time.After(offsettedDay)
-			ticks <- time.Now()
-			<-time.After(pulse)
-			ticks <- time.Now()
+			select {
+			case <-time.After(offsettedDay):
+				ticks <- time.Now()
+			case <-canc:
+				return
+			}
+			select {
+			case <-time.After(pulse):
+				ticks <- time.Now()
+			case <-canc:
+				return
+			}
 		}
 		for t := range PulseEvery(hourly, pulse, canc) {
 			ticks <- t
@@ -272,7 +292,7 @@ func main() {
 	// }()
 
 	// ticks, _ := TickEveryDayAt("15:30", cancel)
-	ticks, _ := PulseEveryDayAt("16:21", 1*time.Minute, cancel)
+	ticks, _ := PulseEveryDayAt("18:12", 1*time.Minute, cancel)
 	for t := range ticks {
 		log.Debug(t)
 		rs.Toggle()
