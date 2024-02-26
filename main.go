@@ -35,7 +35,9 @@ const (
 )
 
 const (
-	PIN_INTERRRUPT = "33"
+	PIN_INTERRRUPT = ""
+	PIN_TOUCH      = "31" // touch sensor digital in
+	PIN_ERRLED     = "33"
 	PIN_RELAY      = "35"
 )
 
@@ -140,8 +142,13 @@ func TickEveryDayAt(clock string, canc <-chan bool) (chan time.Time, error) {
 		if offset >= 0 {
 			// case where time until tick duration, so sleeping
 			log.WithFields(log.Fields{"offset": offDuration}).Debug("Time until tick")
-			<-time.After(offDuration)
-			ticks <- time.Now()
+			// NOTE: incase offDuration is long, still responsive to system interruption
+			select {
+			case <-time.After(offDuration):
+				ticks <- time.Now()
+			case <-canc:
+				break
+			}
 		} else {
 			//this is a tricky situation when the ticking time for the day has already elapsed
 			// 24 hour cycle does not apply, for the next tick but you have to send an extra tick for the tick that has elapsed
@@ -150,8 +157,13 @@ func TickEveryDayAt(clock string, canc <-chan bool) (chan time.Time, error) {
 			offset = int64(86400) + offset                                    // offset here is negative, hence the final offset calculated would have to be less than 24 hours / 86400 seconds
 			offsettedDay, _ := time.ParseDuration(fmt.Sprintf("%ds", offset)) // a day is about 86400 seconds
 			log.WithFields(log.Fields{"offset": offsettedDay}).Debug("time until next tick, offset day")
-			<-time.After(offsettedDay)
-			ticks <- time.Now()
+			// NOTE: offsetedDay is indeed a long duration, using select case will help to be responsive to system interruptions
+			select {
+			case <-time.After(offsettedDay):
+				ticks <- time.Now()
+			case <-canc:
+				break
+			}
 		}
 		for t := range TickEvery(daily, canc) {
 			ticks <- t
@@ -238,17 +250,29 @@ func main() {
 	//Setup work for the bot
 	log.Debug("Initialized Pi connection..")
 
-	log.Info("Setting up interrupt watch")
+	errled := digital.NewErrLED(PIN_ERRLED, r).Boot() // created a new err led that can indicate and lg errors
+	errled.Log(fmt.Errorf("test error for the led"))
+
+	touch := digital.NewTouchSensor(PIN_TOUCH, r).Boot()
 	go func() {
-		btn := digital.NewInterruptButton(PIN_INTERRRUPT, digital.BTN_PULLUP, r)
-		for t := range btn.Start(cancel, 350*time.Millisecond) {
-			fmt.Println(t)
-			rs.Toggle()
+		for t := range touch.Watch(cancel) {
+			log.Infof("Now exiting the application: %v", t)
+			close(cancel)
+			return
 		}
 	}()
 
+	// log.Info("Setting up interrupt watch")
+	// go func() {
+	// 	btn := digital.NewInterruptButton(PIN_INTERRRUPT, digital.BTN_PULLUP, r)
+	// 	for t := range btn.Start(cancel, 350*time.Millisecond) {
+	// 		fmt.Println(t)
+	// 		rs.Toggle()
+	// 	}
+	// }()
+
 	// ticks, _ := TickEveryDayAt("15:30", cancel)
-	ticks, _ := PulseEveryDayAt("16:22", 1*time.Minute, cancel)
+	ticks, _ := PulseEveryDayAt("16:21", 1*time.Minute, cancel)
 	for t := range ticks {
 		log.Debug(t)
 		rs.Toggle()

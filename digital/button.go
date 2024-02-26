@@ -54,7 +54,7 @@ func NewInterruptButton(pin string, pullupdown uint8, adp gobot.Adaptor) *Interr
 }
 
 func (ib *InterruptButton) Start(canc chan bool, interval time.Duration) chan time.Time {
-	chanIntrpt := make(chan time.Time, 1)
+	chanIntrpt := make(chan time.Time, 200)
 	if ib.pull == BTN_PULLUP {
 		ib.DirectPinDriver.DigitalWrite(0) // to start with the pin will be low
 	} else if ib.pull == BTN_PULLDOWN {
