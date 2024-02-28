@@ -15,6 +15,7 @@ import (
 	"os/signal"
 	"strconv"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
@@ -301,35 +302,53 @@ func TickEvery(d time.Duration, canc <-chan bool) chan time.Time {
 
 // this main loop would only setup the tickers
 func main() {
-	fmt.Println("We are inside the patio program ..")
+	log.Info("Starting the clocked relay now..")
+	var wg sync.WaitGroup // unless we are allowing all the threads to exit we cannot close main
 
 	cancel := make(chan bool)
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM, syscall.SIGABRT)
 	defer close(signals)
+	wg.Add(1)
 	go func() {
-		// cannot flush hardware here since after cancel is closed, the program will exit
-		// upon getting the signal we just call off all the loops.
-		<-signals
-		close(cancel)
+		defer wg.Done()
+		select {
+		case <-signals:
+			// cannot flush hardware here since after cancel is closed, the program will exit
+			// upon getting the signal we just call off all the loops.
+			log.Warn("Received system interrupt, closing down program..")
+			close(cancel)
+		case <-cancel:
+			return
+		}
 	}() // flushing the hardware states
-
+	log.Info("Listening for system interruptions now..")
 	// initialized hardware drivers
 	r := raspi.NewAdaptor()
-	r.Connect()
-	rs := digital.NewRelaySwitch(PIN_RELAY, false, r).Boot()
+	err := r.Connect()
+	if err != nil {
+		log.Panicf("failed to connect to raspberry device %s", err)
+	}
+	log.Info("Connected to raspberry device..")
 
+	wg.Add(1)
 	go func() {
 		// display thread
+		defer wg.Done()
 		disp := oled.NewSundingOLED("oled", r)
-		disp.Clean()
-		disp_date := func() string {
+		flush_display := func() { // helps clear the display for prep and shutdown
+			log.Debug("Flushing display..")
+			disp.Clean()
+			disp.ResetImage().Render()
+		}
+		flush_display()
+		defer flush_display()
+		disp_date := func() string { // helps format current date as string
 			now := time.Now()
 			_, mn, dd := now.Date()
 			hr, min, _ := now.Clock()
 			return fmt.Sprintf("%s-%02d %02d:%02d", mn.String()[:3], dd, hr, min)
 		}
-		defer disp.Clean()
 		disp.Message(10, 10, disp_date()).Render()
 		for {
 			select {
@@ -342,27 +361,34 @@ func main() {
 		}
 	}()
 
-	//Setup work for the bot
-	log.Debug("Initialized Pi connection..")
-
-	errled := digital.NewErrLED(PIN_ERRLED, r).Boot() // created a new err led that can indicate and lg errors
-	errled.Log(fmt.Errorf("test error for the led"))
+	digital.NewErrLED(PIN_ERRLED, r).Boot() // created a new err led that can indicate and lg errors
+	// errled.Log(fmt.Errorf("test error for the led"))
 
 	touch := digital.NewTouchSensor(PIN_TOUCH, r).Boot()
+	wg.Add(1)
 	go func() {
+		defer wg.Done()
 		for t := range touch.Watch(cancel) {
-			log.Infof("Now exiting the application: %v", t)
+			log.Warnf("Touch interrupt, %s", t.Format(time.RFC3339))
 			close(cancel)
 			return
 		}
 	}()
+	log.Info("Touch interrupt setup..")
 
-	ticks, _ := PulseEveryDayAt("15:15", 1*time.Minute, cancel)
-	for t := range ticks {
-		log.Debug(t)
-		rs.Toggle()
-	}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		rs := digital.NewRelaySwitch(PIN_RELAY, false, r).Boot()
+		ticks, _ := PulseEveryDayAt("18:00", 1*time.Minute, cancel)
+		for t := range ticks {
+			log.Debugf("Flipping the relay state: %s", t.Format(time.RFC3339))
+			rs.Toggle()
+		}
+		rs.Low()
+		log.Warn("Now shutting down relay..")
+	}()
+	log.Info("Clock relay now setup..")
 	// Flushing the hardware states
-
-	rs.Low()
+	wg.Wait()
 }
