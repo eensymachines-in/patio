@@ -31,20 +31,18 @@ func (ts *TouchSensor) Watch(canc chan bool) chan time.Time {
 	// https://stackoverflow.com/questions/25657207/how-to-know-a-buffered-channel-is-full
 	// making an unbufferred channel with overflow configuration
 	// When the listener isnt ready channel would overflow and hencee only one tick is sent
-	touches := make(chan time.Time)
+	touches := make(chan time.Time, 1)
 	go func() {
 		defer close(touches)
 		for {
 			select {
 			case <-time.After(200 * time.Millisecond):
 				val, _ := ts.DirectPinDriver.DigitalRead()
-				if val == 1 {
+				if val == 1 && len(touches) < 1 {
 					touches <- time.Now()
 				}
 			case <-canc:
 				return
-			default:
-				continue
 			}
 		}
 	}()

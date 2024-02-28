@@ -35,7 +35,7 @@ const (
 )
 
 const (
-	PIN_INTERRRUPT = ""
+	PIN_INTERRRUPT = ""   // there was a time when we were planning a shutdown tactile button for interrupt
 	PIN_TOUCH      = "31" // touch sensor digital in
 	PIN_ERRLED     = "33"
 	PIN_RELAY      = "35"
@@ -71,7 +71,7 @@ func parse_clock(clock string) (int64, int64, error) {
 	return hr, min, nil
 }
 
-// calc_tickOffset : for the hr,min time this can get the time elapsed,until from the current time
+// calc_tickOffset : for the hr,min time this can get the time elapsed/until from the current time
 // returns the time in duration and seconds elapsed / until
 func calc_tickOffset(hr, min int64) (time.Duration, int64) {
 	now := time.Now() // getting the current time
@@ -84,14 +84,69 @@ func calc_tickOffset(hr, min int64) (time.Duration, int64) {
 	return offDuration, offset
 }
 
+// tickTimeUnix :  given the clock as string , this can give the tick time as unix elaspsed seconds, and the offset seconds from now. Use this instead of calc_tickOffset
+//
+// offset > 0  would mean there is time until today's tick
+//
+// offset <0 would mean time has elapsed since tick
+//
+// tt		: ticktime as unix elapsed seconds
+//
+// offset 	: seconds since / until tick time
+//
+// e		: error in parsing ticktime from clock string
+//
+/*
+	tt, offset, err := tickTimeUnix("13:45")
+	OffsetAsdur :=time.ParseDuration(fmt.Sprintf("%ds", offset))
+	if err == nil {
+		if offset >0 {
+			// time until tick
+		} else if offset <0 {
+			// time elapased since tick
+		}else {
+			// tick time right now
+		}
+	}
+*/
+func tickTimeUnix(clock string) (tt int64, offset int64, e error) {
+	hr, min, e := parse_clock(clock)
+	if e != nil {
+		return
+	}
+	/* For getting the elapsed / until time between now and the tick time (offset) we compare both of them to same day's midnight
+	offset thus can be +ve / -ve depending on when it was assessed. - if the tick is ahead or past the now time
+	*/
+	now := time.Now()
+	h, m, s := now.Clock()
+	midnight := now.Unix() - int64(s+(m*60)+(h*3600)) // tracing the midnight time
+	tt = midnight + (hr * 3600) + (min * 60)
+	log.WithFields(log.Fields{"ticktime": tt, "nowtime": now.Unix()}).Debug("clock times")
+	offset = tt - now.Unix() // getting the offset of the now to the time of tick
+	return
+}
+
+// PulseEveryDayAt : This is the same as TickEveryDay but involves 2 ticks in every call. - hence the name pulse
+//
+//   - clock	: time at which the pulse is initiated everyday
+//
+//   - pulse	: gap in the pulse - since 2 ticks make a pulse
+//
+//   - canc		: interruption channel
 func PulseEveryDayAt(clock string, pulse time.Duration, canc <-chan bool) (chan time.Time, error) {
 	ticks := make(chan time.Time, 2)
-	hr, min, _ := parse_clock(clock)
+	// hr, min, _ := parse_clock(clock)
 	go func() {
 		defer close(ticks)
 		// time calculations have to be done only inside the go routine since scheduling time of this routine is indeterminate
 		// only when the coroutine gets scheduled can you do all the time calculations.
-		offDuration, offset := calc_tickOffset(hr, min)
+		// offDuration, offset := calc_tickOffset(hr, min)
+		_, offset, err := tickTimeUnix(clock)
+		if err != nil {
+			log.Error(err)
+			return
+		}
+		offDuration, _ := time.ParseDuration(fmt.Sprintf("%ds", offset))
 		if offset >= 0 {
 			// case where time until tick duration, so sleeping
 			log.WithFields(log.Fields{"offset": offDuration}).Debug("Time until tick")
@@ -108,21 +163,27 @@ func PulseEveryDayAt(clock string, pulse time.Duration, canc <-chan bool) (chan 
 				return
 			}
 		} else {
+			// start + pulse > start + offset+ pulse
 			//this is a tricky situation when the ticking time for the day has already elapsed
 			// 24 hour cycle does not apply, for the next tick but you have to send an extra tick for the tick that has elapsed
 			log.WithFields(log.Fields{"offset": offDuration}).Debug("Time since tick")
-			ticks <- time.Now()
+			// 2 ticks make a pulse, Below we are arriving at the pulse start and end
 			start := time.Now().Add(offDuration) // offDuration is negative, hence it would give the pulse start
-			// BUG: what if now >= end ?
 			end := start.Add(pulse)
-			select {
-			case <-time.After(time.Until(end)): // this will be less than the pulse since the elapsed time has to be subtracted
+			if time.Until(end) > 0 {
 				ticks <- time.Now()
-			case <-canc:
-				return
+				log.Debug("we are between the pulses")
+				select {
+				case <-time.After(time.Until(end)): // this will be less than the pulse since the elapsed time has to be subtracted
+					ticks <- time.Now()
+				case <-canc:
+					return
+				}
 			}
-
-			offset = int64(86400) + offset                                    // offset here is negative, hence the final offset calculated would have to be less than 24 hours / 86400 seconds
+			log.Debug("we are past both the pulses, hence no ticks")
+			// Since we are already pass the pulsing time, the next one pulse shall start for less than 24 hours
+			// offset here is negative, hence the final offset calculated would have to be less than 24 hours / 86400 seconds
+			offset = int64(86400) + offset
 			offsettedDay, _ := time.ParseDuration(fmt.Sprintf("%ds", offset)) // a day is about 86400 seconds
 			log.WithFields(log.Fields{"offset": offsettedDay}).Debug("time until next tick, offset day")
 			select {
@@ -203,8 +264,14 @@ func PulseEvery(d, w time.Duration, canc <-chan bool) chan time.Time {
 			select {
 			case <-time.After(d):
 				ticks <- time.Now()
-				<-time.After(w)
-				ticks <- time.Now()
+				// NOTE: for long sleep times to make it responsive to sys interrupts
+				select {
+				case <-time.After(w):
+					ticks <- time.Now()
+				case <-canc:
+					return
+				}
+
 			case <-canc:
 				return
 			}
@@ -232,19 +299,6 @@ func TickEvery(d time.Duration, canc <-chan bool) chan time.Time {
 	return ticks
 }
 
-// func main() {
-// 	cancel := make(chan bool, 1)
-// 	defer close(cancel)
-// 	r := raspi.NewAdaptor()
-// 	r.Connect()
-// 	btn := digital.NewInterruptButton("33", digital.BTN_PULLUP, r)
-// 	fmt.Println("Press the button to see the interrupt ..")
-// 	for t := range btn.Start(cancel, 350*time.Millisecond) {
-// 		fmt.Println(t)
-// 		return
-// 	}
-// }
-
 // this main loop would only setup the tickers
 func main() {
 	fmt.Println("We are inside the patio program ..")
@@ -264,9 +318,30 @@ func main() {
 	r := raspi.NewAdaptor()
 	r.Connect()
 	rs := digital.NewRelaySwitch(PIN_RELAY, false, r).Boot()
-	disp := oled.NewSundingOLED("oled", r)
-	disp.Clean()
-	disp.ResetImage().Message(10, 10, "Hello world").Render()
+
+	go func() {
+		// display thread
+		disp := oled.NewSundingOLED("oled", r)
+		disp.Clean()
+		disp_date := func() string {
+			now := time.Now()
+			_, mn, dd := now.Date()
+			hr, min, _ := now.Clock()
+			return fmt.Sprintf("%s-%02d %02d:%02d", mn.String()[:3], dd, hr, min)
+		}
+		defer disp.Clean()
+		disp.Message(10, 10, disp_date()).Render()
+		for {
+			select {
+			case <-cancel:
+				return
+			case <-time.After(1 * time.Minute):
+				disp.Clean()
+				disp.Message(10, 10, disp_date()).Render()
+			}
+		}
+	}()
+
 	//Setup work for the bot
 	log.Debug("Initialized Pi connection..")
 
@@ -282,21 +357,12 @@ func main() {
 		}
 	}()
 
-	// log.Info("Setting up interrupt watch")
-	// go func() {
-	// 	btn := digital.NewInterruptButton(PIN_INTERRRUPT, digital.BTN_PULLUP, r)
-	// 	for t := range btn.Start(cancel, 350*time.Millisecond) {
-	// 		fmt.Println(t)
-	// 		rs.Toggle()
-	// 	}
-	// }()
-
-	// ticks, _ := TickEveryDayAt("15:30", cancel)
-	ticks, _ := PulseEveryDayAt("18:12", 1*time.Minute, cancel)
+	ticks, _ := PulseEveryDayAt("15:15", 1*time.Minute, cancel)
 	for t := range ticks {
 		log.Debug(t)
 		rs.Toggle()
 	}
 	// Flushing the hardware states
-	disp.Clean()
+
+	rs.Low()
 }
