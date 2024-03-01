@@ -10,6 +10,7 @@ date		: 21-2-2024
 place		: Pune
 =============== */
 import (
+	"context"
 	"fmt"
 	"os"
 	"sync"
@@ -37,13 +38,14 @@ func init() {
 	log.SetReportCaller(false)
 	log.SetOutput(os.Stdout)
 	log.SetLevel(log.DebugLevel)
+
 }
 
 // this main loop would only setup the tickers
 func main() {
 	log.Info("Starting the clocked relay now..")
 	var wg sync.WaitGroup // unless we are allowing all the threads to exit we cannot close main
-
+	ctx, cancel := context.WithCancel(context.Background())
 	// initialized hardware drivers
 	r := raspi.NewAdaptor()
 	err := r.Connect()
@@ -51,7 +53,12 @@ func main() {
 		log.Panicf("failed to connect to raspberry device %s", err)
 	}
 	log.Info("Connected to raspberry device..")
-	cancel := interrupt.TouchOrSysSignal(PIN_TOUCH, r)
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		<-interrupt.TouchOrSysSignal(PIN_TOUCH, r, ctx, &wg)
+		cancel()
+	}()
 
 	wg.Add(1)
 	go func() {
@@ -74,7 +81,7 @@ func main() {
 		disp.Message(10, 10, disp_date()).Render()
 		for {
 			select {
-			case <-cancel:
+			case <-ctx.Done():
 				return
 			case <-time.After(1 * time.Minute):
 				disp.Clean()
@@ -87,7 +94,7 @@ func main() {
 	go func() {
 		defer wg.Done()
 		rs := digital.NewRelaySwitch(PIN_RELAY, false, r).Boot()
-		ticks, _ := tickers.PulseEveryDayAt("18:00", 4*time.Hour, cancel)
+		ticks, _ := tickers.PulseEveryDayAt("08:27", 1*time.Hour, ctx, &wg)
 		for t := range ticks {
 			log.Debugf("Flipping the relay state: %s", t.Format(time.RFC3339))
 			rs.Toggle()

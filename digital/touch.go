@@ -1,8 +1,11 @@
 package digital
 
 import (
+	"context"
+	"sync"
 	"time"
 
+	"github.com/sirupsen/logrus"
 	"gobot.io/x/gobot"
 	"gobot.io/x/gobot/drivers/gpio"
 )
@@ -27,13 +30,16 @@ func (ts *TouchSensor) Boot() *TouchSensor {
 func (ts *TouchSensor) ShutD() {
 	ts.DirectPinDriver.DigitalWrite(0)
 }
-func (ts *TouchSensor) Watch(canc chan bool) chan time.Time {
+func (ts *TouchSensor) Watch(ctx context.Context, wg *sync.WaitGroup) chan time.Time {
 	// https://stackoverflow.com/questions/25657207/how-to-know-a-buffered-channel-is-full
 	// making an unbufferred channel with overflow configuration
 	// When the listener isnt ready channel would overflow and hencee only one tick is sent
 	touches := make(chan time.Time, 1)
+	wg.Add(1)
 	go func() {
+		defer wg.Done()
 		defer close(touches)
+		defer logrus.Warn("Now closing touch sensor..")
 		for {
 			select {
 			case <-time.After(600 * time.Millisecond):
@@ -41,7 +47,7 @@ func (ts *TouchSensor) Watch(canc chan bool) chan time.Time {
 				if val == 1 && len(touches) < 1 {
 					touches <- time.Now()
 				}
-			case <-canc:
+			case <-ctx.Done():
 				return
 			}
 		}

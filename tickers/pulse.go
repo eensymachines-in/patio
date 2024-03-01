@@ -1,7 +1,9 @@
 package tickers
 
 import (
+	"context"
 	"fmt"
+	"sync"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -10,7 +12,7 @@ import (
 // PulseEvery : after every d duration it would tick twice separated by w duration
 // canc channel will kill the loop and close the channel
 // d > w always
-func PulseEvery(d, w time.Duration, canc <-chan bool) chan time.Time {
+func PulseEvery(d, w time.Duration, ctx context.Context, wg *sync.WaitGroup) chan time.Time {
 	ticks := make(chan time.Time, 1)
 	go func() {
 		defer close(ticks)
@@ -22,11 +24,11 @@ func PulseEvery(d, w time.Duration, canc <-chan bool) chan time.Time {
 				select {
 				case <-time.After(w):
 					ticks <- time.Now()
-				case <-canc:
+				case <-ctx.Done():
 					return
 				}
 
-			case <-canc:
+			case <-ctx.Done():
 				return
 			}
 		}
@@ -41,10 +43,11 @@ func PulseEvery(d, w time.Duration, canc <-chan bool) chan time.Time {
 //   - pulse	: gap in the pulse - since 2 ticks make a pulse
 //
 //   - canc		: interruption channel
-func PulseEveryDayAt(clock string, pulse time.Duration, canc <-chan bool) (chan time.Time, error) {
+func PulseEveryDayAt(clock string, pulse time.Duration, ctx context.Context, wg *sync.WaitGroup) (chan time.Time, error) {
 	ticks := make(chan time.Time, 2)
-	// hr, min, _ := parse_clock(clock)
+	wg.Add(1)
 	go func() {
+		defer wg.Done()
 		defer close(ticks)
 		// time calculations have to be done only inside the go routine since scheduling time of this routine is indeterminate
 		// only when the coroutine gets scheduled can you do all the time calculations.
@@ -61,13 +64,13 @@ func PulseEveryDayAt(clock string, pulse time.Duration, canc <-chan bool) (chan 
 			select {
 			case <-time.After(offDuration):
 				ticks <- time.Now()
-			case <-canc:
+			case <-ctx.Done():
 				return
 			}
 			select {
 			case <-time.After(pulse):
 				ticks <- time.Now()
-			case <-canc:
+			case <-ctx.Done():
 				return
 			}
 		} else {
@@ -84,7 +87,7 @@ func PulseEveryDayAt(clock string, pulse time.Duration, canc <-chan bool) (chan 
 				select {
 				case <-time.After(time.Until(end)): // this will be less than the pulse since the elapsed time has to be subtracted
 					ticks <- time.Now()
-				case <-canc:
+				case <-ctx.Done():
 					return
 				}
 			} else {
@@ -100,17 +103,17 @@ func PulseEveryDayAt(clock string, pulse time.Duration, canc <-chan bool) (chan 
 			select {
 			case <-time.After(offsettedDay):
 				ticks <- time.Now()
-			case <-canc:
+			case <-ctx.Done():
 				return
 			}
 			select {
 			case <-time.After(pulse):
 				ticks <- time.Now()
-			case <-canc:
+			case <-ctx.Done():
 				return
 			}
 		}
-		for t := range PulseEvery(daily, pulse, canc) {
+		for t := range PulseEvery(daily, pulse, ctx, wg) {
 			ticks <- t
 		}
 	}()
