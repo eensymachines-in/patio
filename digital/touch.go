@@ -36,7 +36,7 @@ func (ts *TouchSensor) Watch(canc chan bool) chan time.Time {
 		defer close(touches)
 		for {
 			select {
-			case <-time.After(200 * time.Millisecond):
+			case <-time.After(600 * time.Millisecond):
 				val, _ := ts.DirectPinDriver.DigitalRead()
 				if val == 1 && len(touches) < 1 {
 					touches <- time.Now()
