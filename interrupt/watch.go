@@ -1,10 +1,11 @@
 package interrupt
+
 /* ==========================
 Inerrupts are a common requirement when it comes to SoCs and IoT devices.
 System interrupts when the OS decides to call it off
 Manual intervention - tactile buttons & touch sensors
 Each of the watches runs an infinite loop to capture all t he interrupts as thety come in,. unless ofcourse the client calls the cancel function to stop the watch
-==========================*/ 
+==========================*/
 import (
 	"context"
 	"os"
@@ -38,6 +39,8 @@ func SysSignalWatch(ctx context.Context, wg *sync.WaitGroup) chan time.Time {
 		defer wg.Done()
 		defer close(signals)
 		defer close(interrupt)
+		defer logrus.Warn("Now closing loop for SysSignalWatch")
+
 		for {
 			select {
 			case <-signals: // when system interrupts, notify all processes
@@ -77,6 +80,7 @@ func TouchSensorWatch(pin string, adp gobot.Adaptor, ctx context.Context, wg *sy
 	go func() {
 		defer wg.Done()
 		defer close(interrupt)
+		defer logrus.Warn("Now closing loop for TouchSensorWatch")
 		for {
 			select {
 			case <-ctx.Done():
@@ -120,6 +124,7 @@ func TouchOrSysSignal(pin string, adp gobot.Adaptor, ctx context.Context, wg *sy
 		defer wg.Done()
 		defer close(signals)
 		defer close(interrupt)
+		defer logrus.Warn("Now closing loop for TouchOrSysSignal")
 		for {
 			select {
 			case <-touch.Watch(ctx, wg):
