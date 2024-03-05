@@ -97,6 +97,8 @@ func PulseEveryDayAt(clock string, pulse time.Duration, ctx context.Context, wg 
 			}
 			// Since we are already pass the pulsing time, the next one pulse shall start for less than 24 hours
 			// offset here is negative, hence the final offset calculated would have to be less than 24 hours / 86400 seconds
+			// BUG: from here the time waited until end is not subtracted if we were between pulses
+			// so pulse width more in waiting offsetted day .. which is wrong
 			offset = int64(86400) + offset
 			offsettedDay, _ := time.ParseDuration(fmt.Sprintf("%ds", offset)) // a day is about 86400 seconds
 			log.WithFields(log.Fields{"offset": offsettedDay}).Debug("time until next tick, offset day")

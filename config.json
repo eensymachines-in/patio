@@ -1,0 +1,15 @@
+{
+    "appname": "Aquaponics, Pump control",
+    "schedule": {
+        "config": 2,
+        "tickat": "17:10",
+        "pulsegap": 600
+    },
+    "gpio": {
+        "touch": "31",
+        "errled": "33",
+        "relays": {
+            "pump": "35"
+        }
+    }
+}
