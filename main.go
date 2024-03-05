@@ -220,7 +220,7 @@ func main() {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		for intr := range interrupt.TouchOrSysSignal(PIN_TOUCH, r, ctx, &wg) {
+		for intr := range interrupt.TouchOrSysSignal(PIN_TOUCH, digital.SLOW_WATCH_3_3V, r, ctx, &wg) {
 			log.WithFields(log.Fields{
 				"time": intr,
 			}).Warn("received interrupt..")

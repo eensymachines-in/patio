@@ -73,7 +73,7 @@ func SysSignalWatch(ctx context.Context, wg *sync.WaitGroup) chan time.Time {
 		cancel()
 	}
 */
-func TouchSensorWatch(pin string, adp gobot.Adaptor, ctx context.Context, wg *sync.WaitGroup) chan time.Time {
+func TouchSensorWatch(pin string, speed time.Duration, adp gobot.Adaptor, ctx context.Context, wg *sync.WaitGroup) chan time.Time {
 	interrupt := make(chan time.Time, 1)
 	touch := digital.NewTouchSensor(pin, adp).Boot()
 	wg.Add(1)
@@ -85,7 +85,7 @@ func TouchSensorWatch(pin string, adp gobot.Adaptor, ctx context.Context, wg *sy
 			select {
 			case <-ctx.Done():
 				return
-			case t := <-touch.Watch(ctx, wg):
+			case t := <-touch.Watch(speed, ctx, wg):
 				logrus.WithFields(logrus.Fields{
 					"time": t.Format(time.RFC822),
 				}).Warn("touch interrupt..")
@@ -114,7 +114,7 @@ func TouchSensorWatch(pin string, adp gobot.Adaptor, ctx context.Context, wg *sy
 	}
 
 */
-func TouchOrSysSignal(pin string, adp gobot.Adaptor, ctx context.Context, wg *sync.WaitGroup) chan time.Time {
+func TouchOrSysSignal(pin string, speed time.Duration, adp gobot.Adaptor, ctx context.Context, wg *sync.WaitGroup) chan time.Time {
 	interrupt := make(chan time.Time, 1)
 	touch := digital.NewTouchSensor(pin, adp).Boot()
 	signals := make(chan os.Signal, 1)
@@ -127,7 +127,7 @@ func TouchOrSysSignal(pin string, adp gobot.Adaptor, ctx context.Context, wg *sy
 		defer logrus.Warn("Now closing loop for TouchOrSysSignal")
 		for {
 			select {
-			case <-touch.Watch(ctx, wg):
+			case <-touch.Watch(speed, ctx, wg):
 				logrus.WithFields(logrus.Fields{
 					"time": time.Now().Format(time.RFC822),
 				}).Warn("button interrupt..")
