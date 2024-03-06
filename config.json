@@ -2,7 +2,7 @@
     "appname": "Aquaponics, Pump control",
     "schedule": {
         "config": 2,
-        "tickat": "17:10",
+        "tickat": "12:35",
         "pulsegap": 600
     },
     "gpio": {
