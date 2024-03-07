@@ -1,13 +1,13 @@
 ### Maiden tryst with Aquaponics:
 ---
 
-400 litre fish tank, intentions to grow cherry tomatoes to understand the fine balanced nitrogen cycle, while keeping an eye open for possible avenues for Internet of things + automation.
-A large part of successful aquaponics experimentation is all about diligent monitoring, taking corrective action on/before time & maintaining comprehensive logs of all the events and triggers with their consequential effects. This inspired me to build a small IoT project along as the experimental farm was being setup. 
+400 litre fish tank, intentions to grow [tomatoes](https://theaquaponicsguide.com/growing-aquaponic-tomatoes/) to understand the fine balanced [nitrogen cycle](https://www.aquagardening.com.au/learn/nitrogen-cycle-aquaponics/), while keeping an eye open for possible avenues for Internet of things + automation.
+A large part of successful aquaponics experimentation is all about diligent monitoring, taking corrective action on/before time & maintaining comprehensive logs of all the events and triggers with their consequential effects. This inspired me to build a small IoT project along as the experimental farm is being setup. 
 
 - Water pump and its timing is vital to maitaining a the fine nitrogen cycle balance.
 - Water pH has a narrow window in which the __fish and plants coexists__ : too alkaline the plants won't respond, too acidic and the fish would die.
-- Water temprature is instrumental in achieving fish health and apettite, while only in a ceratin range of water temperature tomato plants are known to thrive.
-- Water level loss is though minimal needs close monitoring for any sudden changes. 
+- Water temprature is instrumental in achieving fish health & apettite, while only in a ceratin range of water temperature tomato plants are known to thrive.
+- Water loss is though minimal needs close monitoring for any sudden changes - tank ruptures
 
 Water pump __timing__ isn't considered if you have got the bell siphon working correctly. Bell siphons are riddled with problems of fine tuning. It would be not __unless you have perfected this can you proceed for actual bacterial cultivation.__ 
 

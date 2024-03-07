@@ -65,7 +65,7 @@ func init() {
 	log.SetLevel(log.DebugLevel)
 
 	// TODO: read configuration file and hoist all the vars
-	f, err := os.Open("./config.json")
+	f, err := os.Open("/etc/aquapone.config.json")
 	if err != nil || f == nil {
 		log.Panicf("failed to access config.json %s", err)
 		return
