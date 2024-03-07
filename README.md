@@ -5,25 +5,32 @@
 A large part of successful aquaponics experimentation is all about diligent monitoring, taking corrective action on/before time & maintaining comprehensive logs of all the events and triggers with their consequential effects. This inspired me to build a small IoT project along as the experimental farm was being setup. 
 
 - Water pump and its timing is vital to maitaining a the fine nitrogen cycle balance.
-- Water pH has a small window in which the fish and plants coexists - too alkaline the plants wont respond, too acidic and the fish would die.
-- Water temprature is instrumental in achieving fish health and apettite, while in a ceratin range of water temperature tomato plants are known to thrive.
+- Water pH has a narrow window in which the __fish and plants coexists__ : too alkaline the plants won't respond, too acidic and the fish would die.
+- Water temprature is instrumental in achieving fish health and apettite, while only in a ceratin range of water temperature tomato plants are known to thrive.
 - Water level loss is though minimal needs close monitoring for any sudden changes. 
 
-Water pump timing isnt a issue if you have got the bell siphon working correctly. Bell siphons are riddled with problems of fine tuning. It would be not unless you have perfected this can you proceed for actual bacterial cultivation. Inlet mass flow of water (into the grow bed) has cascading effect on how the downstream flow rates get constrained.
+Water pump __timing__ isn't considered if you have got the bell siphon working correctly. Bell siphons are riddled with problems of fine tuning. It would be not __unless you have perfected this can you proceed for actual bacterial cultivation.__ 
 
- - Inlet flow is more than necessary to just start the siphon lock, would result in the air lock not getting a chance to open
- - Inlet flow is much less than necessaery would mean the air lock is not sustained and like a weir the water just negotiates what it can - siphon is never started.
+Inlet mass flow of water (into the grow bed) has cascading effect on how the downstream flow rates get constrained.
+
+ - _Inlet flow is more than necessary_ to just start the siphon lock, would result in the air lock not getting a chance to open. Thus growbed water reaches an equilibrium at the slots and water just free flows downstream to the fish. Unless of course you time switch the pump off and break the lock.
+ - _Inlet flow is much less than necessery_ would mean the air lock is not sustained and like a weir the water just negotiates extra head just above the opening of the siphon. - __siphon is never started.__ For lower inflows the siphon needs a re-design and hence an expensive proposition.
   
-What I found convenient is keeping the inlet mass flow a little more than necessary and as the siphon locks we can then time the motor to stop so that only under siphon lock and gravity water can flow out with a guarentee of lock opening at the desired level 
+What I found convenient (and economical) is keeping the inlet mass flow a little more than necessary and as the siphon locks we can then time the motor to stop so that only under siphon lock and gravity water can flow out with a guarentee of lock opening at the desired level 
 
 ### Water pump control / timing :
 ----
 
 1. Water pump raises the water from fish tank to the grow bed 
-2. Grow bed head rises till bell siphon gets air locked 
-3. An air locked siphon then starts draining water back to the fish tank 
-4. Water head in the grow bed lowers will it reaches the slots 
-5. Air lock is opened as air seeps into the siphon. - Drain stops
+2. Growbed head rises till bell siphon gets air locked 
+3. An air locked siphon then starts draining water back to the fish tank (against gravity) 
+4. Water head in the grow bed lowers will it reaches the slots (on the bell of siphon 2.5" from the bottom)
+5. Air lock is opened as air seeps into the siphon. - Drain flow stops
 6. Water pump continues to raise the head in the grow bed till air lock is formed again
 
-This cycle is what is referred to as the `Ebb-Flow` system
+This cycle is what is referred to as the `Ebb-Flow` system. An automated way to flood and drain the grow bed is achieved with the siphon or siphon+ pump timing. Barring the bottom 2.5" of the grow bed which is always flooded, the fertile area remains damp and thus aids growth of bacteria. 
+Such bacteria help sustain the nitrogen cycle. 
+
+### Inflow just above required ! Pump is operation timed:
+-----
+
