@@ -41,13 +41,15 @@ When the pump is on for complete ebb-flow cycle the inflow does have an influenc
 1. Time it takes to drain 
 2. Breaking the siphon lock
 
-While being drained if the inflow is greater than the outlfow, the growbed would overflow, while if the inflow is lesser than the outflow the growbed would be steadily drain out. Time required to drain the same amount of water though in such a case would be more than if the inflow was zero. So in the ideal world the inflow should be a square wave
+While being drained if the inflow > outlfow, the growbed would overflow, while if the inflow is lesser < outflow the growbed would be steadily drain out. Time required to drain the same amount of water though in such a case would be more than if the inflow was zero. So in the ideal world the inflow should be a square wave. 
 
-   |time to grwbd fill|
-    ___________________             ON - valve opened just about to initiate lock
-___|                   |___         OFF
-
+1. High possible inflow till the grow bed is flooded 
+2. Siphon is locked the inflow should be minimal as possible
 
 Lower inflows tend to create difficulties in intiating / sustaining the siphon while higher inflows tend to make stronger siphon locks which are difficult to break. This setup needs the siphon to initiate & break smoothly. Hence we have a narrow window of inflow rate to control. Valves though are simplest / cheapest to use in such case the iteration to reach the exact inflow is quite tedious plus valves over period of time do accumulate grime that changes the inflow unexpectedly.
 
+#### Pump has timing / sensor control:
 
+While iterating the inflow, one can time the flooding and drain cycles. A clock driven relay can then sweetly time the relay such that exactly when the siphon starts the pump stops while when the siphon lock is opened the pump motor can resume.
+
+Another interesting way out is attaching a [water flow sensor](https://www.amazon.in/Water-Flow-Sensor-by-Robokart/dp/B00ZNAXNRO/ref=sr_1_5?sr=8-5) which can detect outflow. Outflow indicates siphon lock initiation while when the flow stops it indicates an opened siphon lock and thus can signal relay to resume operation.
