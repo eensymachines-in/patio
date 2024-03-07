@@ -18,7 +18,7 @@ Inlet mass flow of water (into the grow bed) has cascading effect on how the dow
   
 What I found convenient (and economical) is keeping the inlet mass flow a little more than necessary and as the siphon locks we can then time the motor to stop so that only under siphon lock and gravity water can flow out with a guarentee of lock opening at the desired level 
 
-### Water pump control / timing :
+### Water cycle - Flood & Drain :
 ----
 
 1. Water pump raises the water from fish tank to the grow bed 
@@ -33,4 +33,21 @@ Such bacteria help sustain the nitrogen cycle.
 
 ### Inflow just above required ! Pump is operation timed:
 -----
+
+#### Lets consider the pump ON 24x7:
+
+When the pump is on for complete ebb-flow cycle the inflow does have an influence on 
+
+1. Time it takes to drain 
+2. Breaking the siphon lock
+
+While being drained if the inflow is greater than the outlfow, the growbed would overflow, while if the inflow is lesser than the outflow the growbed would be steadily drain out. Time required to drain the same amount of water though in such a case would be more than if the inflow was zero. So in the ideal world the inflow should be a square wave
+
+   |time to grwbd fill|
+    ___________________             ON - valve opened just about to initiate lock
+___|                   |___         OFF
+
+
+Lower inflows tend to create difficulties in intiating / sustaining the siphon while higher inflows tend to make stronger siphon locks which are difficult to break. This setup needs the siphon to initiate & break smoothly. Hence we have a narrow window of inflow rate to control. Valves though are simplest / cheapest to use in such case the iteration to reach the exact inflow is quite tedious plus valves over period of time do accumulate grime that changes the inflow unexpectedly.
+
 
