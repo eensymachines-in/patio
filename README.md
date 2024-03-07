@@ -15,3 +15,15 @@ Water pump timing isnt a issue if you have got the bell siphon working correctly
  - Inlet flow is much less than necessaery would mean the air lock is not sustained and like a weir the water just negotiates what it can - siphon is never started.
   
 What I found convenient is keeping the inlet mass flow a little more than necessary and as the siphon locks we can then time the motor to stop so that only under siphon lock and gravity water can flow out with a guarentee of lock opening at the desired level 
+
+### Water pump control / timing :
+----
+
+1. Water pump raises the water from fish tank to the grow bed 
+2. Grow bed head rises till bell siphon gets air locked 
+3. An air locked siphon then starts draining water back to the fish tank 
+4. Water head in the grow bed lowers will it reaches the slots 
+5. Air lock is opened as air seeps into the siphon. - Drain stops
+6. Water pump continues to raise the head in the grow bed till air lock is formed again
+
+This cycle is what is referred to as the `Ebb-Flow` system
