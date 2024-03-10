@@ -35,6 +35,7 @@ Such bacteria help sustain the nitrogen cycle.
 -----
 
 #### Lets consider the pump ON 24x7:
+------
 
 When the pump is on for complete ebb-flow cycle the inflow does have an influence on 
 
@@ -49,7 +50,54 @@ While being drained if the inflow > outlfow, the growbed would overflow, while i
 Lower inflows tend to create difficulties in intiating / sustaining the siphon while higher inflows tend to make stronger siphon locks which are difficult to break. This setup needs the siphon to initiate & break smoothly. Hence we have a narrow window of inflow rate to control. Valves though are simplest / cheapest to use in such case the iteration to reach the exact inflow is quite tedious plus valves over period of time do accumulate grime that changes the inflow unexpectedly.
 
 #### Pump has timing / sensor control:
+-----
 
 While iterating the inflow, one can time the flooding and drain cycles. A clock driven relay can then sweetly time the relay such that exactly when the siphon starts the pump stops while when the siphon lock is opened the pump motor can resume.
 
 Another interesting way out is attaching a [water flow sensor](https://www.amazon.in/Water-Flow-Sensor-by-Robokart/dp/B00ZNAXNRO/ref=sr_1_5?sr=8-5) which can detect outflow. Outflow indicates siphon lock initiation while when the flow stops it indicates an opened siphon lock and thus can signal relay to resume operation.
+
+#### Build & installation
+------
+
+Build and install systemd unit using the `build.sh` script. Go runnable is named `eensymacaquapone` but the service unit would be named as `aquapone.service` This gets enabled with systemd. 
+
+```sh
+sudo systemctl daemon reload
+journalctl -u aquapone.service
+```
+Start and stop just like any other service 
+
+```sh
+sudo systemctl start aquapone.service
+sudo systemctl stop aquapone.service
+
+```
+
+#### Changing the configuration
+------
+
+- To change the time of tick use `tickat` 
+- To change the mode of working use`schedule/config`
+  - 0 = Tick every interval
+  - 1 = Tick every day at specific time
+  - 2 = Pulse every interval
+  - 3 = Pulse every day at same time
+- Pulse width can be adjusted `pulsegap`
+
+```json
+{
+    "appname": "Aquaponics, Pump control",
+    "schedule": {
+        "config": 2,
+        "tickat": "12:04",
+        "pulsegap": 600
+    },
+    "gpio": {
+        "touch": "31",
+        "errled": "33",
+        "relays": {
+            "pump": "35"
+        }
+    }
+}
+```
