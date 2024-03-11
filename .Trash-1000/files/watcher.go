@@ -1,0 +1,5 @@
+package aqucfg
+
+func main() {
+
+}
