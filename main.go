@@ -55,6 +55,10 @@ type AppConfig struct {
 			Pump string `json:"pump"`
 		} `json:"relays"`
 	} `json:"gpio"`
+	Rabbit struct {
+		Server string `json:"server"`
+		Login  string `json:"login"`
+	} `json:"rabbit"`
 }
 
 func init() {

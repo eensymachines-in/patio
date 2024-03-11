@@ -11,5 +11,9 @@
         "relays": {
             "pump": "35"
         }
+    },
+    "rabbit":{
+        "server":"192.168.1.102:30072",
+        "login":"guest@guest"
     }
 }
