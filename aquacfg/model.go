@@ -19,15 +19,4 @@ type AppConfig struct {
 		TickAt   string       `json:"tickat"`
 		PulseGap int          `json:"pulsegap,omitempty"`
 	} `json:"schedule"`
-	Gpio struct {
-		Touch  string `json:"touch"`
-		ErrLed string `json:"errled"`
-		Relays struct {
-			Pump string `json:"pump"`
-		} `json:"relays"`
-	} `json:"gpio"`
-	Rabbit struct {
-		Server string `json:"server"`
-		Login  string `json:"login"`
-	} `json:"rabbit"`
 }

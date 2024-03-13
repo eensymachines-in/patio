@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strconv"
 	"sync"
 	"time"
 
@@ -31,16 +32,50 @@ var (
 )
 
 func init() {
+	// required environment variables
+	/*
+		PATH_APPCONFIG
+		NAME_SYSCTLSERVICE
+		MODE_DEBUGLVL
+		AMQP_LOGIN
+		AMQP_SERVER
+		AMQP_CFGCHNNL
+		GPIO_TOUCH
+		GPIO_ERRLED
+		GPIO_PUMP_MAIN
+	*/
+	for _, v := range []string{
+		"PATH_APPCONFIG",
+		"NAME_SYSCTLSERVICE",
+		"MODE_DEBUGLVL",
+		"AMQP_LOGIN",
+		"AMQP_SERVER",
+		"AMQP_CFGCHNNL",
+		"GPIO_TOUCH",
+		"GPIO_ERRLED",
+		"GPIO_PUMP_MAIN",
+	} {
+		if val := os.Getenv(v); val == "" {
+			log.Panicf("Required environment variable missing in ~/.bashrc: %s", v)
+		}
+	}
 	// Setting up the loggin framework
 	log.SetFormatter(&log.TextFormatter{DisableColors: false, FullTimestamp: false})
 	log.SetReportCaller(false)
 	log.SetOutput(os.Stdout)
-	log.SetLevel(log.DebugLevel)
+
+	lvl, err := strconv.Atoi(os.Getenv("MODE_DEBUGLVL"))
+	if err != nil {
+		log.Warnf("invalid env var value for logging level, only integers %s", os.Getenv("MODE_DEBUGLVL"))
+		log.SetLevel(log.DebugLevel)
+	} else {
+		log.SetLevel(log.Level(lvl)) // sets from the environment
+	}
 
 	// TODO: read configuration file and hoist all the vars
-	f, err := os.Open("/etc/aquapone.config.json")
+	f, err := os.Open(os.Getenv("PATH_APPCONFIG"))
 	if err != nil || f == nil {
-		log.Panicf("failed to access config.json %s", err)
+		log.Panicf("failed to access application configuration file %s", err)
 		return
 	}
 	byt, err := io.ReadAll(f)
@@ -54,13 +89,10 @@ func init() {
 		return
 	}
 	log.WithFields(log.Fields{
-		"name":         config.AppName,
-		"sched":        config.Schedule.Config,
-		"tick":         config.Schedule.TickAt,
-		"pulsegap":     config.Schedule.PulseGap,
-		"touchpin":     config.Gpio.Touch,
-		"errledpin":    config.Gpio.ErrLed,
-		"pumprelaypin": config.Gpio.Relays.Pump,
+		"name":     config.AppName,
+		"sched":    config.Schedule.Config,
+		"tick":     config.Schedule.TickAt,
+		"pulsegap": config.Schedule.PulseGap,
 	}).Debug("read in app config")
 }
 
@@ -82,7 +114,7 @@ func main() {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		for intr := range interrupt.TouchOrSysSignal(config.Gpio.Touch, digital.SLOW_WATCH_3_3V, r, ctx, &wg) {
+		for intr := range interrupt.TouchOrSysSignal(os.Getenv("GPIO_TOUCH"), digital.SLOW_WATCH_3_3V, r, ctx, &wg) {
 			log.WithFields(log.Fields{
 				"time": intr.Format(time.RFC822),
 			}).Warn("Interrupted...")
@@ -124,7 +156,7 @@ func main() {
 	go func() {
 		defer wg.Done()
 
-		rs := digital.NewRelaySwitch(config.Gpio.Relays.Pump, false, r).Boot()
+		rs := digital.NewRelaySwitch(os.Getenv("GPIO_PUMP_MAIN"), false, r).Boot()
 		ticks, _ := tickers.PulseEveryDayAt(config.Schedule.TickAt, time.Duration(config.Schedule.PulseGap)*time.Second, ctx, &wg)
 
 		for t := range ticks {

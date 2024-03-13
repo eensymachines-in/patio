@@ -3,8 +3,19 @@ Description=Starts the device control for aquaponics system
 After=multi-user.target
 
 [Service]
-ExecStart=/usr/bin/eensymacaqupone
 Type=simple
+Environment="PATH_APPCONFIG=/etc/aquapone.config.json" 
+Environment="NAME_SYSCTLSERVICE=aquapone.service" 
+Environment="MODE_SYSCTLCMD=0" 
+Environment="MODE_DEBUGLVL=5" 
+Environment="AMQP_SERVER=192.168.1.102:30073" 
+Environment="AMQP_LOGIN=guest:guest" 
+Environment="AMQP_CFGCHNNL=aquapone.config" 
+Environment="GPIO_TOUCH=31" 
+Environment="GPIO_ERRLED=33" 
+Environment="GPIO_PUMP_MAIN=35"
+ExecStart=/usr/bin/eensymacaqupone
+
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=multi-user.target  

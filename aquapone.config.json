@@ -1,19 +1,8 @@
 {
-    "appname": "Aquaponics, Pump control",
+    "appname": "Aquaponics control centrale",
     "schedule": {
         "config": 2,
-        "tickat": "19:15",
+        "tickat": "13:16",
         "pulsegap": 600
-    },
-    "gpio": {
-        "touch": "31",
-        "errled": "33",
-        "relays": {
-            "pump": "35"
-        }
-    },
-    "rabbit":{
-        "server":"192.168.1.102:30073",
-        "login":"guest@guest"
     }
 }
