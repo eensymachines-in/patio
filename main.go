@@ -157,8 +157,19 @@ func main() {
 		defer wg.Done()
 
 		rs := digital.NewRelaySwitch(os.Getenv("GPIO_PUMP_MAIN"), false, r).Boot()
-		ticks, _ := tickers.PulseEveryDayAt(config.Schedule.TickAt, time.Duration(config.Schedule.PulseGap)*time.Second, ctx, &wg)
-
+		// TODO: This comes from configuration
+		var ticks chan time.Time
+		if config.Schedule.Config == aquacfg.PULSE_EVERY_DAYAT {
+			log.Debug("now pulsing every day at specific time..")
+			ticks, _ = tickers.PulseEveryDayAt(config.Schedule.TickAt, time.Duration(config.Schedule.PulseGap)*time.Second, ctx, &wg)
+		} else if config.Schedule.Config == aquacfg.PULSE_EVERY {
+			log.Debug("now pulsing every interval..")
+			ticks = tickers.PulseEvery(time.Duration(config.Schedule.Interval)*time.Second, time.Duration(config.Schedule.PulseGap)*time.Second, ctx, &wg)
+		} else { // no suitable schedule configuration
+			log.Errorf("Invalid schedule configuration: %d", config.Schedule.Config)
+			cancel()
+			return
+		}
 		for t := range ticks {
 			log.Debugf("Flipping the relay state: %s", t.Format(time.RFC822))
 			rs.Toggle()

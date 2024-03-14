@@ -42,9 +42,9 @@ func (ts *TouchSensor) Watch(speed time.Duration, ctx context.Context, wg *sync.
 	touches := make(chan time.Time, 1)
 	wg.Add(1)
 	go func() {
+		defer logrus.Warn("Now closing touch sensor..")
 		defer wg.Done()
 		defer close(touches)
-		defer logrus.Warn("Now closing touch sensor..")
 		for {
 			select {
 			case <-time.After(speed):
