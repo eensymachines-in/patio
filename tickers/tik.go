@@ -1,39 +1,47 @@
 package tickers
 
 import (
+	"context"
 	"fmt"
+	"sync"
 	"time"
 
 	log "github.com/sirupsen/logrus"
 )
+
 // For the given duration this can send channel messages for the current time over an over till canceled
 // use the canc channel to kill the loop
-func TickEvery(d time.Duration, canc <-chan bool) chan time.Time {
+func TickEvery(d time.Duration, ctx context.Context, wg *sync.WaitGroup) chan time.Time {
 	ticks := make(chan time.Time, 1)
 	//sets up the loop for ticking, can be closed only if the cancel channel closed.
+	wg.Add(1)
 	go func() {
+		defer wg.Done()
 		defer close(ticks)
 		for {
 			select {
 			case <-time.After(d):
 				ticks <- time.Now()
-			case <-canc:
+			case <-ctx.Done():
 				return
 			}
 		}
 	}()
 	return ticks
 }
+
 // TickEveryDayAt : for a given clock time like 13:40,it will send ticks separated by 24 hours
 // closing the canc channel will bring down the loop and close all the ticks
 // Ticks setup before the ticking time : the loop starts with the delay to compensate
 // Ticks setup after the ticking time : immediate tick then offsets the 24 hour cycle for the elapsed time, sends another tick after the day after which regular 24 hours cycle starts
 // clock	: string of the clock, example 13:35
 // canc 	: interrupt channel to kill the loop
-func TickEveryDayAt(clock string, canc <-chan bool) (chan time.Time, error) {
+func TickEveryDayAt(clock string, ctx context.Context, wg *sync.WaitGroup) (chan time.Time, error) {
 	ticks := make(chan time.Time, 1)
 	hr, min, _ := parse_clock(clock)
+	wg.Add(1)
 	go func() {
+		defer wg.Done()
 		defer close(ticks)
 		// time calculations have to be done only inside the go routine since scheduling time of this routine is indeterminate
 		// only when the coroutine gets scheduled can you do all the time calculations.
@@ -45,7 +53,7 @@ func TickEveryDayAt(clock string, canc <-chan bool) (chan time.Time, error) {
 			select {
 			case <-time.After(offDuration):
 				ticks <- time.Now()
-			case <-canc:
+			case <-ctx.Done():
 				break
 			}
 		} else {
@@ -60,11 +68,11 @@ func TickEveryDayAt(clock string, canc <-chan bool) (chan time.Time, error) {
 			select {
 			case <-time.After(offsettedDay):
 				ticks <- time.Now()
-			case <-canc:
+			case <-ctx.Done():
 				break
 			}
 		}
-		for t := range TickEvery(daily, canc) {
+		for t := range TickEvery(daily, ctx, wg) {
 			ticks <- t
 		}
 	}()

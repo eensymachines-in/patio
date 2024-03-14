@@ -160,11 +160,43 @@ func main() {
 		// TODO: This comes from configuration
 		var ticks chan time.Time
 		if config.Schedule.Config == aquacfg.PULSE_EVERY_DAYAT {
-			log.Debug("now pulsing every day at specific time..")
-			ticks, _ = tickers.PulseEveryDayAt(config.Schedule.TickAt, time.Duration(config.Schedule.PulseGap)*time.Second, ctx, &wg)
+			/*At specfic times every day this will send a pulse of triggers for the pulse width as set
+			Intervals are irrelevant here since the cycle is always for 24 hours */
+			pw := time.Duration(config.Schedule.PulseGap) * time.Second
+			log.WithFields(log.Fields{
+				"pulse gap":    pw,
+				"ticking time": config.Schedule.TickAt,
+			}).Debug("Schedule mode: Pulse everyday at")
+			ticks, _ = tickers.PulseEveryDayAt(config.Schedule.TickAt, pw, ctx, &wg)
+
+		} else if config.Schedule.Config == aquacfg.TICK_EVERY_DAYAT {
+			/*At specfic times every day this will send tick triggers
+			Intervals are irrelevant here since the cycle is always for 24 hours */
+			log.WithFields(log.Fields{
+				"ticking time": config.Schedule.TickAt,
+			}).Debug("Schedule mode: Tick every day at")
+			ticks, _ = tickers.TickEveryDayAt(config.Schedule.TickAt, ctx, &wg)
+
 		} else if config.Schedule.Config == aquacfg.PULSE_EVERY {
-			log.Debug("now pulsing every interval..")
-			ticks = tickers.PulseEvery(time.Duration(config.Schedule.Interval)*time.Second, time.Duration(config.Schedule.PulseGap)*time.Second, ctx, &wg)
+			/*For the given interval this can send pulse triggers for given pulse width
+			Clock times are irrelevant here since intervals define when to send the pulse*/
+			intrvl := time.Duration(config.Schedule.Interval) * time.Second
+			pw := time.Duration(config.Schedule.PulseGap) * time.Second
+			log.WithFields(log.Fields{
+				"pulse gap": pw,
+				"interval":  intrvl,
+			}).Debug("Schedule mode: Pulse every interval")
+			ticks = tickers.PulseEvery(intrvl, pw, ctx, &wg)
+
+		} else if config.Schedule.Config == aquacfg.TICK_EVERY {
+			/*For the given interval this can send tick triggers
+			Clock times are irrelevant here since intervals define when to send the pulse*/
+			intrvl := time.Duration(config.Schedule.Interval) * time.Second
+			log.WithFields(log.Fields{
+				"interval": intrvl,
+			}).Debug("Schedule mode: Tick every interval")
+			ticks = tickers.TickEvery(intrvl, ctx, &wg)
+
 		} else { // no suitable schedule configuration
 			log.Errorf("Invalid schedule configuration: %d", config.Schedule.Config)
 			cancel()

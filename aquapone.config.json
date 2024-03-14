@@ -1,7 +1,7 @@
 {
     "appname": "Aquaponics control centrale",
     "schedule": {
-        "config": 2,
+        "config": 3,
         "tickat": "20:30",
         "pulsegap": 10,
         "interval": 30
