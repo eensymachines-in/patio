@@ -1,6 +1,8 @@
 [Unit]
 Description=Starts the device control for aquaponics system
-After=multi-user.target
+After=cfgwatch.service
+BindsTo=cfgwatch.service
+
 
 [Service]
 Type=simple
@@ -8,9 +10,9 @@ Environment="PATH_APPCONFIG=/etc/aquapone.config.json"
 Environment="NAME_SYSCTLSERVICE=aquapone.service" 
 Environment="MODE_SYSCTLCMD=0" 
 Environment="MODE_DEBUGLVL=5" 
-Environment="AMQP_SERVER=192.168.1.102:30073" 
-Environment="AMQP_LOGIN=guest:guest" 
-Environment="AMQP_CFGCHNNL=aquapone.config" 
+Environment="AMQP_SERVER=65.20.79.167:5672" 
+Environment="AMQP_LOGIN=eensyiot-admin:33n5y4dm1n" 
+Environment="AMQP_CFGCHNNL=config-alerts" 
 Environment="GPIO_TOUCH=31" 
 Environment="GPIO_ERRLED=33" 
 Environment="GPIO_PUMP_MAIN=35"
